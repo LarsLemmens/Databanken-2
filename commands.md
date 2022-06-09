@@ -550,7 +550,6 @@ END; $$
 LANGUAGE 'plpgsql';
 ```
 
-
 # CTE
 
 > Stel je hebt een tabel `orders`:
@@ -804,6 +803,41 @@ o2 ON true;
 | ------- | --------------- | ---------------- | -- |
 | 1 | 2017-06-20 04:35:03.582895 | 2017-06-20 04:58:10.137503 |  4 |
 | 3 | 2017-06-20 04:35:10.986712 | 2017-06-20 04:58:17.905277 |  5 |
+
+
+## OFFSET & FETCH
+
+> Stel je wilt een bepaalde output krijgen (dus niet alle rijen) &rarr; gebruiken we best `FETCH` &rarr; in dit geval rij 1 tot 3.
+
+```sql
+SELECT playernumber, name, birth_date
+FROM players p
+ORDER by birth_date DESC
+FETCH FIRST 3 ROWS ONLY;
+```
+
+| playernumber | naam | geb_datum |
+| -------------|------|---------- |
+| 57  | Bohemen, van | 1971-08-17 |
+| 104 | Moerman | 1970-05-10 |
+| 27  | Cools | 1964-12-28 |
+
+
+> Oke nu iets voor uw offset ook, stel ge wilt pas vanaf uw 2e rij &rarr; daar 3 rijen zien.
+
+```sql
+SELECT playernumber, name, birth_date
+FROM players p
+ORDER by birth_date DESC
+OFFSET 2 ROWS
+FETCH FIRST 3 ROWS ONLY;
+```
+
+| playernumber | naam | geb_datum |
+| -------------|------|---------- |
+| 27  | Cools | 1964-12-28 |
+| 6   | Permentier | 1964-06-25 |
+| 112 | Baalen, van | 1963-10-01 |
 
 ## Replicatie
 
