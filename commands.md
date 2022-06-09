@@ -497,7 +497,7 @@ ALTER FUNCTION Func_Test OWNER to test;
 DROP FUNCTION Func_Test;
 ```
 
-## SEELCT INTO
+## SELECT INTO
 
 > Ge kunt ook ne `SELECT INTO`-query maken. Wat ge dan ook in ne functie kunt gooien
 
@@ -526,7 +526,7 @@ FROM
 
 > Poeh, dit is handig   
 
-## Function returing a table
+## Function returning a table
 
 ![](Image/Film-tabel.png)
 
@@ -810,7 +810,6 @@ o2 ON true;
 > Oke ja dus ik kan dit niet testen, dus geen guarantee dat dit juist is.
 
 
-
 ### STAP 1:
 
 > Dus, je gebruiker moet attribuut `REPLICATION` hebben &rarr; GA NAAR `FUJI` &rarr; in de databank `ADMINISTRATION` en doe daar:
@@ -841,6 +840,8 @@ CONNECTION 'dbname=db2 host=fuji.ucll.be user=[rnummer]
 ```
 
 &rarr; BAM dit maakt een subscription voor chinook
+
+## STAP 3:
 
 > Check voor de zekerheid even op `FUJI` of de subscription is aangemaakt.
 
