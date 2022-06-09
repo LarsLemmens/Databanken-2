@@ -730,3 +730,76 @@ FROM levels;
 | 16 | Patrick | Evans | 15 | 4 |
 
 Woah dit is toch wel cool hoor! Als je zoiets zelf kan schrijven dan bent ge echt wel slim
+
+# LATERAL JOINS
+
+> Ja again, snap ik hier geen ene flikker van de slides, dus ik probeer deftiger uit te leggen
+
+> Stel ge hebt hier users
+
+| id | user_id | created_at |
+
+| 1 | 1 | 2017-06-20 04:35:03.582895 |
+| 2 | 2 | 2017-06-20 04:35:07.564973 |
+| 3 | 3 | 2017-06-20 04:35:10.986712 |
+| 4 | 1 | 2017-06-20 04:58:10.137503 |
+| 5 | 3 | 2017-06-20 04:58:17.905277 |
+| 6 | 3 | 2017-06-20 04:58:25.289122 |
+
+> We willen weten wat het tijdstip is van de eerste bestelling die door elke gebruiker is aangemaakt en wat het ID en tijdstip is van de volgende bestelling. LATERAL join is hier een prima oplossing.
+
+```sql
+SELECT user_id, first_order_time, next_order_time, id FROM
+  (SELECT user_id, min(created_at) AS first_order_time FROM orders GROUP BY user_id) o1
+  LEFT JOIN LATERAL
+  (SELECT id, created_at AS next_order_time
+   FROM orders
+   WHERE user_id = o1.user_id AND created_at > o1.first_order_time
+   ORDER BY created_at ASC LIMIT 1)
+   o2 ON true;
+```
+
+**Nog steeds niet door?**
+
+Geen probleem, I got you covered.
+
+We gaan het hier even analyzeren
+
+> We willen dus de user_id, de tijdstip van de eerste bestelling, de tijdstip van de volgende bestelling en het ID van de bestelling. `(SELECT user_id, first_order_time, next_order_time, id FROM)`
+>
+> En alleen de eerste bestelling van elke unieke gebruiker wordt opgenomen `(SELECT user_id, min(created_at) AS first_order_time FROM orders GROUP BY user_id) o1)` &rarr; we moeten die een alias geven genaamd `o1`
+>
+> Hierna gebruiken we dus `LEFT JOIN LATERAL` wat dus wilt zeggen dat we gaan itereren over elk van de elementen in `o1` en daarna voeren we de subquery uit.
+>
+> In uw subquery steken we ID en tijd van de volgende order voor elke gebruiker &rarr; door voorwaarde `created_at > o1.first_order_time` &rarr; first_order_time uit eerste query zal gebruiken &rarr; DIT KAN DOOR LATERAL JOIN 
+
+> Het geeft ons de volgende resultaat:
+
+
+| user_id | first_order_time | next_order_time | id |
+| ------- | --------------- | ---------------- | -- |
+| 1 | 2017-06-20 04:35:03.582895 | 2017-06-20 04:58:10.137503 |  4
+| 3 | 2017-06-20 04:35:10.986712 | 2017-06-20 04:58:17.905277 |  5
+| 2 | 2017-06-20 04:35:07.564973 |                            |
+
+**OEI EEN PROBLEEMPJE**
+
+> Als je goed kijkt zie je hierboven dat gebruiker met user_id 2 geen data heeft voor next_order_time en id. &rarr; om dit te fixen gaan we een INNER JOIN LATERAL gebruiken. Om alleen de rijen in aanmerking te nemen die corresponderende rijen in de tweede tabel hebben.  
+
+```sql
+SELECT user_id, first_order_time, next_order_time, id FROM
+    (SELECT user_id, min(created_at) AS first_order_time FROM orders GROUP BY user_id) o1
+INNER JOIN LATERAL
+    (SELECT id, created_at AS next_order_time
+    FROM orders
+    WHERE user_id = o1.user_id AND created_at > o1.first_order_time
+    ORDER BY created_at ASC LIMIT 1)
+o2 ON true;
+```
+
+> Resultaat is:
+
+| user_id | first_order_time | next_order_time | id |
+| ------- | --------------- | ---------------- | -- |
+| 1 | 2017-06-20 04:35:03.582895 | 2017-06-20 04:58:10.137503 |  4
+| 3 | 2017-06-20 04:35:10.986712 | 2017-06-20 04:58:17.905277 |  5
