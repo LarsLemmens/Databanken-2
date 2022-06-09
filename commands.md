@@ -181,6 +181,7 @@ _Als je er een betere uitleg voor hebt, mag je het aanvullen._
 >   - `n PRECEDING` &rarr; n rijen vóór de huidige rij.
 >   - `n FOLLOWING` &rarr; n rijen na de huidige rij.
 
+
 ### UNBOUNDED PRECEDING AND CURRENT ROW
 
 - **Is het nog steeds niet duidelijk? Geen probleem hier een voorbeeld**
@@ -801,5 +802,57 @@ o2 ON true;
 
 | user_id | first_order_time | next_order_time | id |
 | ------- | --------------- | ---------------- | -- |
-| 1 | 2017-06-20 04:35:03.582895 | 2017-06-20 04:58:10.137503 |  4
-| 3 | 2017-06-20 04:35:10.986712 | 2017-06-20 04:58:17.905277 |  5
+| 1 | 2017-06-20 04:35:03.582895 | 2017-06-20 04:58:10.137503 |  4 |
+| 3 | 2017-06-20 04:35:10.986712 | 2017-06-20 04:58:17.905277 |  5 |
+
+## Replicatie
+
+> Oke ja dus ik kan dit niet testen, dus geen guarantee dat dit juist is.
+
+
+
+### STAP 1:
+
+> Dus, je gebruiker moet attribuut `REPLICATION` hebben &rarr; GA NAAR `FUJI` &rarr; in de databank `ADMINISTRATION` en doe daar:
+
+```sql	
+SELECT user_administration.get_replication();
+```
+
+&rarr; BAM, je kan nu databank `administration` openen
+
+### STAP 2:
+
+> Schrijf je in op de publicatie db2_pub op machine fuji.ucll.be poort 51920. Dit is een andere server dan databanken.ucll.be.
+
+Syntax is hier:
+
+```sql
+CREATE SUBSCRIPTION subscription_name
+    CONNECTION 'conninfo'
+    PUBLICATION publication_name [, ...]
+    [ WITH ( subscription_parameter [= value] [, ... ] ) ]
+```
+
+```sql
+CREATE SUBSCRIPTION db2_sub_[naam]
+CONNECTION 'dbname=db2 host=fuji.ucll.be user=[rnummer]
+ port=51920 password=***** sslmode=require' PUBLICATION db2_pub;
+```
+
+&rarr; BAM dit maakt een subscription voor chinook
+
+> Check voor de zekerheid even op `FUJI` of de subscription is aangemaakt.
+
+```sql
+SELECT * FROM pg_replication_slots;
+```
+
+> Je zou je naam in de output moeten zien dus bijvoorbeeld
+> Dus bijvoorbeeld de user `magda_wel` zou dit moeten zien:
+
+| name | name | text | oid | name | boolean | boolean | xid | xid | pg_isn |
+| ---- | ---- | ---- | --- | ---- | ------- | ------- | --- | --- | ------ |
+| db2_sub_Magda_Wel | pgoutput | logical | 10751 | db2 | false | true | random getal | null | random iets |
+
+> Dus in principe moesten we nu iets inserten op db2/chinook dan zou het ook op uw lokale kopie moeten komen van chinook
