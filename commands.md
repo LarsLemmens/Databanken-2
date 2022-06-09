@@ -497,6 +497,9 @@ ALTER FUNCTION Func_Test OWNER to test;
 DROP FUNCTION Func_Test;
 ```
 
+
+> VOOR MEER VOORBEELDEN VAN FUNCTIONS CHECK PROJEKTWERK!!
+
 ## SELECT INTO
 
 > Ge kunt ook ne `SELECT INTO`-query maken. Wat ge dan ook in ne functie kunt gooien
@@ -549,6 +552,38 @@ END; $$
 
 LANGUAGE 'plpgsql';
 ```
+
+# JSON Functions
+
+> Ik snap ni zo goed waarom we dit zouden zien maar allright, we gaan hier wat documentatie over fixen
+
+
+| Operator | Right Operand Type | Description | Example |
+| -------- | ------------------ | ----------- | ------- |
+| -> | int | Get JSON array element | ``` '[1,2,3]'::json->2 ``` |
+| -> | text | Get JSON object field | ``` '{"a":1,"b":2}'::json->'b' ``` |
+| ->> | int | Get JSON array element as text | ``` '[1,2,3]'::json->>2 ``` |
+| ->> | text | Get JSON object field as text | ``` '{"a":1,"b":2}'::json->>'b' ``` |
+| #> | arary of text |  Get JSON object at specified path | ``` '{"a":[1,2,3],"b":[4,5,6]}'::json#>'{a,2}' ``` |
+| #>> | text | Get JSON object at specified path as text | ``` '{"a":[1,2,3],"b":[4,5,6]}'::json#>>'{a,2}' ``` |
+
+**JSON SUPPORT FUNCTIONS**
+
+
+| **Function** | **Return Type** | **Description** | **Example** | **Example Result** |
+| --- | --- | --- | --- | --- |
+| array_to_json(anyarray [, pretty_bool]) | json | Returns the array as JSON. A PostgreSQL multidimensional array becomes a JSON array of arrays. Line feeds will be added between dimension 1 elements if pretty_bool is true. | array_to_json(&#39;{{1,5},{99,100}}&#39;::int[]) | [[1,5],[99,100]] |
+| row_to_json(record [, pretty_bool]) | json | Returns the row as JSON. Line feeds will be added between level 1 elements if pretty_bool is true. | row_to_json(row(1,&#39;foo&#39;)) | {&quot;f1&quot;:1,&quot;f2&quot;:&quot;foo&quot;} |
+| to_json(anyelement) | json | Returns the value as JSON. If the data type is not built in, and there is a cast from the type to json, the cast function will be used to perform the conversion. Otherwise, for any value other than a number, a Boolean, or a null value, the text representation will be used, escaped and quoted so that it is legal JSON. | to_json(&#39;Fred said &quot;Hi.&quot;&#39;::text) | &quot;Fred said \&quot;Hi.\&quot;&quot; |
+| json_array_length(json) | int | Returns the number of elements in the outermost JSON array. | json_array_length(&#39;[1,2,3,{&quot;f1&quot;:1,&quot;f2&quot;:[5,6]},4]&#39;) | 5 |
+| json_each(json) | SETOF key text, value json | Expands the outermost JSON object into a set of key/value pairs. | select \* from json_each(&#39;{&quot;a&quot;:&quot;foo&quot;, &quot;b&quot;:&quot;bar&quot;}&#39;) | ![](Image\foo-bar-json-each.png)
+| json_each_text(from_json json) | SETOF key text, value text | Expands the outermost JSON object into a set of key/value pairs. The returned value will be of type text. | select \* from json_each_text(&#39;{&quot;a&quot;:&quot;foo&quot;, &quot;b&quot;:&quot;bar&quot;}&#39;) | ![](Image\foo-bar-json-each-text.png)
+| json_extract_path(from_json json, VARIADIC path_elems text[]) | json | Returns JSON object pointed to by path_elems. | json_extract_path(&#39;{&quot;f2&quot;:{&quot;f3&quot;:1},&quot;f4&quot;:{&quot;f5&quot;:99,&quot;f6&quot;:&quot;foo&quot;}}&#39;,&#39;f4&#39;) | {&quot;f5&quot;:99,&quot;f6&quot;:&quot;foo&quot;} |
+| json_extract_path_text(from_json json, VARIADIC path_elems text[]) | text | Returns JSON object pointed to by path_elems. | json_extract_path_text(&#39;{&quot;f2&quot;:{&quot;f3&quot;:1},&quot;f4&quot;:{&quot;f5&quot;:99,&quot;f6&quot;:&quot;foo&quot;}}&#39;,&#39;f4&#39;, &#39;f6&#39;) | foo |
+| json_object_keys(json) | SETOF text | Returns set of keys in the JSON object. Only the &quot;outer&quot; object will be displayed. | json_object_keys(&#39;{&quot;f1&quot;:&quot;abc&quot;,&quot;f2&quot;:{&quot;f3&quot;:&quot;a&quot;, &quot;f4&quot;:&quot;b&quot;}}&#39;) | ![](Image\json-object-key.png) |
+| json_populate_record(base anyelement, from_json json, [, use_json_as_text bool=false] | anyelement | Expands the object in from_json to a row whose columns match the record type defined by base. Conversion will be best effort; columns in base with no corresponding key in from_json will be left null. If a column is specified more than once, the last value is used. | select \* from json_populate_record(null::x, &#39;{&quot;a&quot;:1,&quot;b&quot;:2}&#39;) | ![](Image\json-populate-record.png) |
+| json_populate_recordset(base anyelement, from_json json, [, use_json_as_text bool=false] | SETOF anyelement | Expands the outermost set of objects in from_json to a set whose columns match the record type defined by base. Conversion will be best effort; columns in base with no corresponding key in from_json will be left null. If a column is specified more than once, the last value is used. | select \* from json_populate_recordset(null::x, &#39;[{&quot;a&quot;:1,&quot;b&quot;:2},{&quot;a&quot;:3,&quot;b&quot;:4}]&#39;) | ![](Image\json-populate-recordset.png) |
+| json_array_elements(json) | SETOF json | Expands a JSON array to a set of JSON elements. | json_array_elements(&#39;[1,true, [2,false]]&#39;) | ![](Image\json-array-elements.png) |
 
 # CTE
 
@@ -629,6 +664,7 @@ CROSS JOIN max_order_store max;
 > Hier is het resultaat van uw CTE:
 
 | store | average_order	| min_avg_order_store | max_avg_order_store |
+| --- | --- | --- | --- |
 | Center | 489.98 | 338.70 | 725.30 |
 | East | 338.70 | 338.70 | 725.30 |
 | West | 725.30 | 338.70 | 725.30 |
@@ -672,7 +708,6 @@ ON avg.department = ba.department;
 | **department** | **average_bonus** | **employees_above_average** | **employees_below_average** |
 | --- | --- | --- | --- |
 | CEO | 2545.00 | NULL | NULL |
-| --- | --- | --- | --- |
 | Marketing | 1125.00 | 1 | 1 |
 | Finance | 1100.00 | NULL | NULL |
 | Operations | 675.00 | 1 | 1 |
@@ -738,7 +773,7 @@ Woah dit is toch wel cool hoor! Als je zoiets zelf kan schrijven dan bent ge ech
 > Stel ge hebt hier users
 
 | id | user_id | created_at |
-
+| --- | --- | --- |
 | 1 | 1 | 2017-06-20 04:35:03.582895 |
 | 2 | 2 | 2017-06-20 04:35:07.564973 |
 | 3 | 3 | 2017-06-20 04:35:10.986712 |
